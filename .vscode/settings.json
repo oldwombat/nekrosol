@@ -1,5 +1,12 @@
 {
   "npm.packageManager": "pnpm",
+  "search.exclude": {
+    "**/node_modules": true
+  },
+  "files.exclude": {
+    "**/node_modules": true
+  },
+  "typescript.tsserver.experimental.enableProjectDiagnostics": false,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
