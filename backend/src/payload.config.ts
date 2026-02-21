@@ -26,6 +26,16 @@ export default buildConfig({
     Media,
     Players,
   ],
+  server: {
+    cors: {
+      origin: [
+        'http://localhost:8081',
+        'http://localhost:3000',
+        '*',
+      ],
+      // other options (methods, credentials) as needed
+    },
+  },
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
