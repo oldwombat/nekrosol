@@ -2,6 +2,10 @@ import type { CollectionConfig } from 'payload'
 
 export const Lore: CollectionConfig = {
   slug: 'lore',
+  labels: {
+    singular: 'Lore',
+    plural: 'Lore',
+  },
   access: {
     read: () => true,
   },
