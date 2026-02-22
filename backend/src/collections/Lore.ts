@@ -26,6 +26,20 @@ export const Lore: CollectionConfig = {
       required: true,
     },
     {
+      name: 'department',
+      label: 'Department',
+      type: 'text',
+      required: true,
+      defaultValue: 'Ministry of Truth',
+    },
+    {
+      name: 'visible',
+      label: 'Visible to Players',
+      type: 'checkbox',
+      defaultValue: true,
+      required: true,
+    },
+    {
       name: 'tags',
       label: 'Tags',
       type: 'array',
@@ -38,14 +52,6 @@ export const Lore: CollectionConfig = {
           required: true,
         },
       ]
-    },
-    {
-      name: 'owner',
-      label: 'Owner',
-      type: 'relationship',
-      relationTo: 'users',
-      required: true,
-      visible: false,
     },
   ],
 }

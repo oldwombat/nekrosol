@@ -1,6 +1,9 @@
 import * as migration_20260218_095609_init from './20260218_095609_init';
 import * as migration_20260218_100505_player_auth from './20260218_100505_player_auth';
 import * as migration_20260218_102706_lore_collection from './20260218_102706_lore_collection';
+import * as migration_20260222_081138_lore_collection_remove_owner from './20260222_081138_lore_collection_remove_owner';
+import * as migration_20260222_082103_lore_collection_add_department from './20260222_082103_lore_collection_add_department';
+import * as migration_20260222_093330_lore_collection_add_visible from './20260222_093330_lore_collection_add_visible';
 
 export const migrations = [
   {
@@ -16,6 +19,21 @@ export const migrations = [
   {
     up: migration_20260218_102706_lore_collection.up,
     down: migration_20260218_102706_lore_collection.down,
-    name: '20260218_102706_lore_collection'
+    name: '20260218_102706_lore_collection',
+  },
+  {
+    up: migration_20260222_081138_lore_collection_remove_owner.up,
+    down: migration_20260222_081138_lore_collection_remove_owner.down,
+    name: '20260222_081138_lore_collection_remove_owner',
+  },
+  {
+    up: migration_20260222_082103_lore_collection_add_department.up,
+    down: migration_20260222_082103_lore_collection_add_department.down,
+    name: '20260222_082103_lore_collection_add_department',
+  },
+  {
+    up: migration_20260222_093330_lore_collection_add_visible.up,
+    down: migration_20260222_093330_lore_collection_add_visible.down,
+    name: '20260222_093330_lore_collection_add_visible'
   },
 ];

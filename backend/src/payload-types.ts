@@ -170,11 +170,12 @@ export interface Lore {
   id: number;
   title: string;
   content: string;
+  department: string;
+  visible: boolean;
   tags: {
     tag: string;
     id?: string | null;
   }[];
-  owner: number | User;
   updatedAt: string;
   createdAt: string;
 }
@@ -344,13 +345,14 @@ export interface UsersSelect<T extends boolean = true> {
 export interface LoreSelect<T extends boolean = true> {
   title?: T;
   content?: T;
+  department?: T;
+  visible?: T;
   tags?:
     | T
     | {
         tag?: T;
         id?: T;
       };
-  owner?: T;
   updatedAt?: T;
   createdAt?: T;
 }
