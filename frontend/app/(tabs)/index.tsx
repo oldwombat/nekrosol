@@ -7,6 +7,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 type PlayerProfile = {
   id?: string | number;
   email?: string;
+  displayName?: string | null;
 };
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
@@ -149,19 +150,11 @@ export default function HomeScreen() {
 
   return (
     <View style={base.container}>
-      <Text style={[base.title, { color: palette.text }]}>Player Access</Text>
+      <Text style={[base.title, { color: palette.text }]}>Home</Text>
 
       {player ? (
         <View style={form.inputGroup}>
-          <Text style={[base.paragraph, { color: palette.text }]}>Signed in as {player.email ?? 'Player'}.</Text>
-          <Text style={[base.comments, { color: palette.icon }]}>You can now continue and play the game.</Text>
-          <Pressable
-            style={[buttons.secondary, { backgroundColor: palette.background, borderWidth: 1, borderColor: palette.tabIconDefault }]}
-            onPress={onSignOut}
-            disabled={loading}
-          >
-            <Text style={[buttons.text, { color: palette.text }]}>{loading ? 'Signing out…' : 'Sign out'}</Text>
-          </Pressable>
+          <Text style={[base.paragraph, { color: palette.text }]}>Welcome back, {player.displayName ?? 'Player'}.</Text>
         </View>
       ) : (
         <View style={form.inputGroup}>

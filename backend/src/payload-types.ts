@@ -204,6 +204,7 @@ export interface Media {
  */
 export interface Player {
   id: number;
+  displayName?: string | null;
   role: string;
   updatedAt: string;
   createdAt: string;
@@ -379,6 +380,7 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "players_select".
  */
 export interface PlayersSelect<T extends boolean = true> {
+  displayName?: T;
   role?: T;
   updatedAt?: T;
   createdAt?: T;

@@ -44,6 +44,12 @@ export const Players: CollectionConfig = {
   fields: [
     // Email added by default
     {
+      name: 'displayName',
+      label: 'Display Name',
+      type: 'text',
+      required: false,
+    },
+    {
       name: 'role',
       label: 'Role',
       type: 'text',
