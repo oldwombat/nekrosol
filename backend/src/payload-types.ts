@@ -205,6 +205,14 @@ export interface Media {
 export interface Player {
   id: number;
   displayName?: string | null;
+  credits: number;
+  creditsMax: number;
+  energy: number;
+  energyMax: number;
+  health: number;
+  healthMax: number;
+  radiation: number;
+  radiationMax: number;
   role: string;
   updatedAt: string;
   createdAt: string;
@@ -381,6 +389,14 @@ export interface MediaSelect<T extends boolean = true> {
  */
 export interface PlayersSelect<T extends boolean = true> {
   displayName?: T;
+  credits?: T;
+  creditsMax?: T;
+  energy?: T;
+  energyMax?: T;
+  health?: T;
+  healthMax?: T;
+  radiation?: T;
+  radiationMax?: T;
   role?: T;
   updatedAt?: T;
   createdAt?: T;

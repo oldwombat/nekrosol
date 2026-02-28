@@ -8,7 +8,17 @@ type PlayerProfile = {
   id?: string | number;
   email?: string;
   displayName?: string | null;
+  credits?: number | null;
+  creditsMax?: number | null;
+  energy?: number | null;
+  energyMax?: number | null;
+  health?: number | null;
+  healthMax?: number | null;
+  radiation?: number | null;
+  radiationMax?: number | null;
 };
+
+type ActionType = 'SPD-1' | 'MED-1' | 'RAD-X' | 'BEG';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 
@@ -16,8 +26,10 @@ export default function HomeScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<ActionType | null>(null);
   const [player, setPlayer] = useState<PlayerProfile | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const palette = Colors[isDark ? 'dark' : 'light'];
@@ -28,6 +40,7 @@ export default function HomeScreen() {
       signup: `${API_BASE_URL}/api/players`,
       me: `${API_BASE_URL}/api/players/me`,
       logout: `${API_BASE_URL}/api/players/logout`,
+      actions: `${API_BASE_URL}/api/player-actions`,
     }),
     [],
   );
@@ -135,6 +148,42 @@ export default function HomeScreen() {
     }
   };
 
+  const onAction = async (action: ActionType) => {
+    setActionLoading(action);
+    setErrorMessage(null);
+    setActionMessage(null);
+
+    try {
+      const response = await fetch(authUrl.actions, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ action }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Action failed');
+      }
+
+      setPlayer(data?.player ?? null);
+
+      if (action === 'BEG') {
+        setActionMessage(`You begged and received ${data?.gain ?? 0} credits.`);
+      } else {
+        setActionMessage(`${action} applied successfully.`);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Action failed';
+      setErrorMessage(message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   useEffect(() => {
     loadCurrentPlayer();
   }, []);
@@ -148,6 +197,15 @@ export default function HomeScreen() {
     },
   ];
 
+  const statItems = player
+    ? [
+      { key: 'credits', label: 'Credits', value: player.credits ?? 0, max: player.creditsMax ?? 1000000 },
+      { key: 'energy', label: 'Energy', value: player.energy ?? 0, max: player.energyMax ?? 10 },
+      { key: 'health', label: 'Health', value: player.health ?? 0, max: player.healthMax ?? 100 },
+      { key: 'radiation', label: 'Radiation', value: player.radiation ?? 0, max: player.radiationMax ?? 100 },
+    ]
+    : [];
+
   return (
     <View style={base.container}>
       <Text style={[base.title, { color: palette.text }]}>Home</Text>
@@ -155,6 +213,76 @@ export default function HomeScreen() {
       {player ? (
         <View style={form.inputGroup}>
           <Text style={[base.paragraph, { color: palette.text }]}>Welcome back, {player.displayName ?? 'Player'}.</Text>
+          <View style={{ gap: 10 }}>
+            {statItems.map((stat) => {
+              const safeMax = stat.max > 0 ? stat.max : 1;
+              const percent = Math.max(0, Math.min(100, Math.round((stat.value / safeMax) * 100)));
+              return (
+                <View
+                  key={stat.key}
+                  style={{
+                    borderWidth: 1,
+                    borderColor: palette.tabIconDefault,
+                    borderRadius: 10,
+                    padding: 12,
+                    backgroundColor: palette.background,
+                    gap: 6,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Text style={[base.subtitle, { color: palette.text }]}>{stat.label}</Text>
+                    <Text style={[base.subtitle, { color: palette.text }]}>
+                      {stat.value.toLocaleString()} / {safeMax.toLocaleString()}
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      width: '100%',
+                      height: 8,
+                      borderRadius: 999,
+                      overflow: 'hidden',
+                      backgroundColor: palette.tabIconDefault,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: `${percent}%`,
+                        height: '100%',
+                        backgroundColor: palette.link,
+                      }}
+                    />
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+
+          <Text style={[base.subtitle, { color: palette.text }]}>Actions</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {(['SPD-1', 'MED-1', 'RAD-X', 'BEG'] as ActionType[]).map((action) => (
+              <Pressable
+                key={action}
+                style={[
+                  buttons.secondary,
+                  {
+                    backgroundColor: palette.background,
+                    borderColor: palette.tabIconDefault,
+                    borderWidth: 1,
+                    minWidth: 90,
+                  },
+                  actionLoading === action && buttons.disabled,
+                ]}
+                onPress={() => onAction(action)}
+                disabled={actionLoading !== null}
+              >
+                <Text style={[buttons.text, { color: palette.text }]}>
+                  {actionLoading === action ? '...' : action}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {actionMessage ? <Text style={[base.comments, { color: palette.icon }]}>{actionMessage}</Text> : null}
         </View>
       ) : (
         <View style={form.inputGroup}>
