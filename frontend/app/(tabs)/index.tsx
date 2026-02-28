@@ -70,6 +70,10 @@ export default function HomeScreen() {
         return;
       }
 
+      if (loginResponse.status !== 401) {
+        throw new Error('Unable to authenticate with these credentials');
+      }
+
       // Auto-create a player account if login fails and email does not exist yet.
       // If the account already exists, this will fail and we surface a generic auth error.
       {
