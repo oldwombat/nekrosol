@@ -16,6 +16,15 @@ type PlayerProfile = {
   healthMax?: number | null;
   radiation?: number | null;
   radiationMax?: number | null;
+  thug?: number | null;
+  thief?: number | null;
+  grifter?: number | null;
+  pilot?: number | null;
+  medic?: number | null;
+  hacker?: number | null;
+  technician?: number | null;
+  hazmat?: number | null;
+  physicist?: number | null;
 };
 
 type ActionType = 'SPD-1' | 'MED-1' | 'RAD-X' | 'BEG';
@@ -30,6 +39,7 @@ export default function HomeScreen() {
   const [player, setPlayer] = useState<PlayerProfile | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [activeSkillTip, setActiveSkillTip] = useState<string | null>(null);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const palette = Colors[isDark ? 'dark' : 'light'];
@@ -206,6 +216,22 @@ export default function HomeScreen() {
     ]
     : [];
 
+  const skillItems = [
+    { key: 'thug', label: 'Thug', tip: 'Physical, combat, defence' },
+    { key: 'thief', label: 'Thief', tip: 'Physical, agile, nimble' },
+    { key: 'grifter', label: 'Grifter', tip: 'Skill, crime, cunning' },
+    { key: 'pilot', label: 'Pilot', tip: 'Skill, courage, speed' },
+    { key: 'medic', label: 'Medic', tip: 'Skill, intelligence, healer' },
+    { key: 'hacker', label: 'Hacker', tip: 'Skill, intelligence, technical' },
+    { key: 'technician', label: 'Technician', tip: 'Skill, intelligence, mechanical, biotech' },
+    { key: 'hazmat', label: 'Hazmat', tip: 'Physical, resist radiation' },
+    {
+      key: 'physicist',
+      label: 'Physicist',
+      tip: 'Skill, control radiation effects and mutations caused by Nekrosol solar radiation',
+    },
+  ];
+
   return (
     <View style={base.container}>
       <Text style={[base.title, { color: palette.text }]}>Home</Text>
@@ -213,73 +239,169 @@ export default function HomeScreen() {
       {player ? (
         <View style={form.inputGroup}>
           <Text style={[base.paragraph, { color: palette.text }]}>Welcome back, {player.displayName ?? 'Player'}.</Text>
-          <View style={{ gap: 10 }}>
-            {statItems.map((stat) => {
-              const safeMax = stat.max > 0 ? stat.max : 1;
-              const percent = Math.max(0, Math.min(100, Math.round((stat.value / safeMax) * 100)));
-              return (
-                <View
-                  key={stat.key}
-                  style={{
-                    borderWidth: 1,
-                    borderColor: palette.tabIconDefault,
-                    borderRadius: 10,
-                    padding: 12,
-                    backgroundColor: palette.background,
-                    gap: 6,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={[base.subtitle, { color: palette.text }]}>{stat.label}</Text>
-                    <Text style={[base.subtitle, { color: palette.text }]}>
-                      {stat.value.toLocaleString()} / {safeMax.toLocaleString()}
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      width: '100%',
-                      height: 8,
-                      borderRadius: 999,
-                      overflow: 'hidden',
-                      backgroundColor: palette.tabIconDefault,
-                    }}
-                  >
+          <View style={{ width: '100%', gap: 12 }}>
+            <View style={{ width: '100%', flexDirection: 'row', alignItems: 'stretch', gap: 12 }}>
+              <View style={{ flex: 1, gap: 10 }}>
+                {statItems.map((stat) => {
+                  const safeMax = stat.max > 0 ? stat.max : 1;
+                  const percent = Math.max(0, Math.min(100, Math.round((stat.value / safeMax) * 100)));
+                  return (
                     <View
+                      key={stat.key}
                       style={{
-                        width: `${percent}%`,
-                        height: '100%',
-                        backgroundColor: palette.link,
+                        borderWidth: 1,
+                        borderColor: palette.tabIconDefault,
+                        borderRadius: 10,
+                        padding: 12,
+                        backgroundColor: palette.background,
+                        gap: 6,
                       }}
-                    />
-                  </View>
-                </View>
-              );
-            })}
-          </View>
+                    >
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={[base.subtitle, { color: palette.text }]}>{stat.label}</Text>
+                        <Text style={[base.subtitle, { color: palette.text }]}>
+                          {stat.value.toLocaleString()} / {safeMax.toLocaleString()}
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          width: '100%',
+                          height: 8,
+                          borderRadius: 999,
+                          overflow: 'hidden',
+                          backgroundColor: palette.tabIconDefault,
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: `${percent}%`,
+                            height: '100%',
+                            backgroundColor: palette.link,
+                          }}
+                        />
+                      </View>
+                    </View>
+                  );
+                })}
 
-          <Text style={[base.subtitle, { color: palette.text }]}>Actions</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {(['SPD-1', 'MED-1', 'RAD-X', 'BEG'] as ActionType[]).map((action) => (
-              <Pressable
-                key={action}
-                style={[
-                  buttons.secondary,
-                  {
-                    backgroundColor: palette.background,
-                    borderColor: palette.tabIconDefault,
-                    borderWidth: 1,
-                    minWidth: 90,
-                  },
-                  actionLoading === action && buttons.disabled,
-                ]}
-                onPress={() => onAction(action)}
-                disabled={actionLoading !== null}
+                <Text style={[base.subtitle, { color: palette.text }]}>Actions</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {(['SPD-1', 'MED-1', 'RAD-X', 'BEG'] as ActionType[]).map((action) => (
+                    <Pressable
+                      key={action}
+                      style={[
+                        buttons.secondary,
+                        {
+                          backgroundColor: palette.background,
+                          borderColor: palette.tabIconDefault,
+                          borderWidth: 1,
+                          minWidth: 90,
+                        },
+                        actionLoading === action && buttons.disabled,
+                      ]}
+                      onPress={() => onAction(action)}
+                      disabled={actionLoading !== null}
+                    >
+                      <Text style={[buttons.text, { color: palette.text }]}>
+                        {actionLoading === action ? '...' : action}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              <View
+                style={{
+                  width: '42%',
+                  minWidth: 240,
+                  borderWidth: 1,
+                  borderColor: palette.tabIconDefault,
+                  borderRadius: 10,
+                  padding: 12,
+                  backgroundColor: palette.background,
+                  gap: 8,
+                }}
               >
-                <Text style={[buttons.text, { color: palette.text }]}>
-                  {actionLoading === action ? '...' : action}
-                </Text>
-              </Pressable>
-            ))}
+                <Text style={[base.subtitle, { color: palette.text }]}>Player Skills</Text>
+                {skillItems.map((skill) => {
+                  const value = Number(player?.[skill.key as keyof PlayerProfile] ?? 0);
+                  const isOpen = activeSkillTip === skill.key;
+                  return (
+                    <View key={skill.key} style={{ gap: 4 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={[base.comments, { color: palette.text, fontStyle: 'normal', flex: 1 }]}>
+                          {skill.label}: {value}
+                        </Text>
+                        <Pressable
+                          onPress={() => setActiveSkillTip(isOpen ? null : skill.key)}
+                          style={{ paddingHorizontal: 6, paddingVertical: 2 }}
+                        >
+                          <Text style={{ color: palette.link, fontWeight: '700' }}>ⓘ</Text>
+                        </Pressable>
+                      </View>
+                      {isOpen ? (
+                        <Text style={[base.comments, { color: palette.icon }]}>{skill.tip}</Text>
+                      ) : null}
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+
+            <View style={{ width: '100%', flexDirection: 'row', alignItems: 'stretch', gap: 12 }}>
+              <View
+                style={{
+                  flex: 1,
+                  borderWidth: 1,
+                  borderColor: palette.tabIconDefault,
+                  borderRadius: 10,
+                  padding: 12,
+                  backgroundColor: palette.background,
+                  gap: 8,
+                }}
+              >
+                <Text style={[base.subtitle, { color: palette.text }]}>Missions</Text>
+                <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Patrol the Solar Fringe</Text>
+                <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Salvage Run: Rust Belt</Text>
+                <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Escort the Convoy</Text>
+              </View>
+
+              <View
+                style={{
+                  width: '42%',
+                  minWidth: 240,
+                  borderWidth: 1,
+                  borderColor: palette.tabIconDefault,
+                  borderRadius: 10,
+                  padding: 12,
+                  backgroundColor: palette.background,
+                  gap: 8,
+                }}
+              >
+                <Text style={[base.subtitle, { color: palette.text }]}>Inventory</Text>
+                <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Basic Rations x3</Text>
+                <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Scrap Toolkit x1</Text>
+                <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Solar Jacket x1</Text>
+              </View>
+            </View>
+
+            <View
+              style={{
+                width: '100%',
+                borderWidth: 1,
+                borderColor: palette.tabIconDefault,
+                borderRadius: 10,
+                padding: 12,
+                backgroundColor: palette.background,
+                gap: 8,
+              }}
+            >
+              <Text style={[base.subtitle, { color: palette.text }]}>Nekrosol</Text>
+              <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Dustline Tavern</Text>
+              <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Ember Bank</Text>
+              <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Blackglass Market</Text>
+              <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Reactor District</Text>
+            </View>
           </View>
 
           {actionMessage ? <Text style={[base.comments, { color: palette.icon }]}>{actionMessage}</Text> : null}
