@@ -22,9 +22,6 @@ export type PlayerProfile = {
   scavenger?: number | null;
   mechanic?: number | null;
   smuggler?: number | null;
-  itemSpd1?: number | null;
-  itemMed1?: number | null;
-  itemRadx?: number | null;
 };
 
 export type StatItem = {
@@ -123,36 +120,6 @@ export const missionItems: MissionItem[] = [
     summary: 'Protect trade convoys through contested routes.',
     details: 'Take contracts to defend cargo movement between settlements while managing risk and supply timing.',
     action: null,
-  },
-];
-
-export type InventoryAction = 'SPD-1' | 'MED-1' | 'RAD-X';
-
-export type InventoryItem = {
-  action: InventoryAction;
-  label: string;
-  description: string;
-  buttonLabel: string;
-};
-
-export const inventoryItems: InventoryItem[] = [
-  {
-    action: 'SPD-1',
-    label: 'SPD-1 Stim',
-    description: 'Stimulant for rapid response and movement.',
-    buttonLabel: 'Use',
-  },
-  {
-    action: 'MED-1',
-    label: 'MED-1 Medkit',
-    description: 'Emergency treatment pack for stabilizing wounds.',
-    buttonLabel: 'Use',
-  },
-  {
-    action: 'RAD-X',
-    label: 'RAD-X Shield',
-    description: 'Anti-radiation dose to reduce exposure impact.',
-    buttonLabel: 'Use',
   },
 ];
 

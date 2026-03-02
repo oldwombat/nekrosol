@@ -1,6 +1,7 @@
 import configPromise from '@payload-config'
 import { headers as getHeaders } from 'next/headers'
 import { getPayload } from 'payload'
+import { consumeInventoryItem, getPlayerInventory } from '@/lib/player-inventory'
 
 type ActionType = 'SPD-1' | 'MED-1' | 'RAD-X' | 'BEG'
 
@@ -14,9 +15,6 @@ type PlayerStats = {
   healthMax?: number | null
   radiation?: number | null
   radiationMax?: number | null
-  itemSpd1?: number | null
-  itemMed1?: number | null
-  itemRadx?: number | null
 }
 
 const asNumber = (value: unknown, fallback: number) =>
@@ -30,22 +28,18 @@ const applyAction = (player: PlayerStats, action: ActionType) => {
   const health = asNumber(player.health, 0)
   const healthMax = asNumber(player.healthMax, 100)
   const radiation = asNumber(player.radiation, 0)
-  const itemSpd1 = asNumber(player.itemSpd1, 0)
-  const itemMed1 = asNumber(player.itemMed1, 0)
-  const itemRadx = asNumber(player.itemRadx, 0)
-
   switch (action) {
     case 'SPD-1':
       return {
-        data: { energy: energyMax, itemSpd1: Math.max(0, itemSpd1 - 1) },
+        data: { energy: energyMax },
       }
     case 'MED-1':
       return {
-        data: { health: healthMax, itemMed1: Math.max(0, itemMed1 - 1) },
+        data: { health: healthMax },
       }
     case 'RAD-X':
       return {
-        data: { radiation: Math.max(0, radiation - 10), itemRadx: Math.max(0, itemRadx - 1) },
+        data: { radiation: Math.max(0, radiation - 10) },
       }
     case 'BEG': {
       const gain = Math.floor(Math.random() * 5) + 1
@@ -92,16 +86,15 @@ export const POST = async (request: Request) => {
       return Response.json({ error: 'Not enough energy' }, { status: 400 })
     }
 
-    if (action === 'SPD-1' && asNumber(player.itemSpd1, 0) < 1) {
-      return Response.json({ error: 'No SPD-1 items left' }, { status: 400 })
-    }
+    const requiresItem = action === 'SPD-1' || action === 'MED-1' || action === 'RAD-X'
 
-    if (action === 'MED-1' && asNumber(player.itemMed1, 0) < 1) {
-      return Response.json({ error: 'No MED-1 items left' }, { status: 400 })
-    }
+    if (requiresItem) {
+      const beforeInventory = await getPlayerInventory(payload, user.id)
+      const currentCount = Number(beforeInventory.counts[action] ?? 0)
 
-    if (action === 'RAD-X' && asNumber(player.itemRadx, 0) < 1) {
-      return Response.json({ error: 'No RAD-X items left' }, { status: 400 })
+      if (currentCount < 1) {
+        return Response.json({ error: `No ${action} items left` }, { status: 400 })
+      }
     }
 
     const result = applyAction(player, action)
@@ -114,11 +107,22 @@ export const POST = async (request: Request) => {
       depth: 0,
     })
 
+    if (requiresItem) {
+      const consumed = await consumeInventoryItem(payload, user.id, action)
+
+      if (!consumed.ok) {
+        return Response.json({ error: consumed.error }, { status: 500 })
+      }
+    }
+
+    const inventory = await getPlayerInventory(payload, user.id)
+
     return Response.json({
       ok: true,
       action,
       gain: result.gain,
       player: updatedPlayer,
+      inventoryCounts: inventory.counts,
     })
   } catch (error) {
     console.error('player-actions error', error)

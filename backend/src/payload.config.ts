@@ -9,6 +9,7 @@ import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Lore } from './collections/Lore'
 import { Players } from './collections/Players'
+import { Inventory } from './collections/Inventory'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -25,6 +26,7 @@ export default buildConfig({
     Lore,
     Media,
     Players,
+    Inventory,
   ],
   server: {
     cors: {

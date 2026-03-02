@@ -4,6 +4,7 @@ import * as migration_20260218_102706_lore_collection from './20260218_102706_lo
 import * as migration_20260222_081138_lore_collection_remove_owner from './20260222_081138_lore_collection_remove_owner';
 import * as migration_20260222_082103_lore_collection_add_department from './20260222_082103_lore_collection_add_department';
 import * as migration_20260222_093330_lore_collection_add_visible from './20260222_093330_lore_collection_add_visible';
+import * as migration_20260302_223900_inventory_collection from './20260302_223900_inventory_collection';
 
 export const migrations = [
   {
@@ -35,5 +36,10 @@ export const migrations = [
     up: migration_20260222_093330_lore_collection_add_visible.up,
     down: migration_20260222_093330_lore_collection_add_visible.down,
     name: '20260222_093330_lore_collection_add_visible'
+  },
+  {
+    up: migration_20260302_223900_inventory_collection.up,
+    down: migration_20260302_223900_inventory_collection.down,
+    name: '20260302_223900_inventory_collection',
   },
 ];

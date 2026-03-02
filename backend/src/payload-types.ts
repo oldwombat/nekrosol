@@ -72,6 +72,7 @@ export interface Config {
     lore: Lore;
     media: Media;
     players: Player;
+    inventory: Inventory;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -83,6 +84,7 @@ export interface Config {
     lore: LoreSelect<false> | LoreSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     players: PlayersSelect<false> | PlayersSelect<true>;
+    inventory: InventorySelect<false> | InventorySelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -225,9 +227,6 @@ export interface Player {
   scavenger: number;
   mechanic: number;
   smuggler: number;
-  itemSpd1: number;
-  itemMed1: number;
-  itemRadx: number;
   role: string;
   updatedAt: string;
   createdAt: string;
@@ -247,6 +246,18 @@ export interface Player {
     | null;
   password?: string | null;
   collection: 'players';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inventory".
+ */
+export interface Inventory {
+  id: number;
+  player: number | Player;
+  itemKey: string;
+  quantity: number;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -287,6 +298,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'players';
         value: number | Player;
+      } | null)
+    | ({
+        relationTo: 'inventory';
+        value: number | Inventory;
       } | null);
   globalSlug?: string | null;
   user:
@@ -424,9 +439,6 @@ export interface PlayersSelect<T extends boolean = true> {
   scavenger?: T;
   mechanic?: T;
   smuggler?: T;
-  itemSpd1?: T;
-  itemMed1?: T;
-  itemRadx?: T;
   role?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -444,6 +456,17 @@ export interface PlayersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inventory_select".
+ */
+export interface InventorySelect<T extends boolean = true> {
+  player?: T;
+  itemKey?: T;
+  quantity?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

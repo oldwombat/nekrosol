@@ -5,10 +5,8 @@ import { base, buttons, Colors, form } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
   getStatItems,
-  inventoryItems,
   locationItems,
   missionItems,
-  type InventoryAction,
   type PlayerProfile,
   skillItems,
 } from './home-data';
@@ -20,8 +18,18 @@ export default function HomeScreen() {
   const [activeSkillTip, setActiveSkillTip] = useState<string | null>(null);
   const [selectedMissionId, setSelectedMissionId] = useState<string>(missionItems[0]?.id ?? '');
   const [selectedLocationId, setSelectedLocationId] = useState<string>(locationItems[0]?.id ?? '');
-  const { loading, actionLoading, player, errorMessage, actionMessage, loadCurrentPlayer, onSubmit, onAction } =
-    useHomeAuth();
+  const {
+    loading,
+    actionLoading,
+    player,
+    inventoryItems,
+    inventoryCounts,
+    errorMessage,
+    actionMessage,
+    loadCurrentPlayer,
+    onSubmit,
+    onAction,
+  } = useHomeAuth();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const palette = Colors[isDark ? 'dark' : 'light'];
@@ -42,20 +50,20 @@ export default function HomeScreen() {
   const statItems = getStatItems(player);
   const selectedMission = missionItems.find((mission) => mission.id === selectedMissionId) ?? missionItems[0];
   const selectedLocation = locationItems.find((location) => location.id === selectedLocationId) ?? locationItems[0];
-  const inventoryCounts = {
-    'SPD-1': Number(player?.itemSpd1 ?? 0),
-    'MED-1': Number(player?.itemMed1 ?? 0),
-    'RAD-X': Number(player?.itemRadx ?? 0),
-  };
+  const usableActions: ActionType[] = ['SPD-1', 'MED-1', 'RAD-X'];
 
-  const onUseInventoryItem = async (action: InventoryAction) => {
+  const onUseInventoryItem = async (action: string) => {
+    if (!(usableActions as string[]).includes(action)) {
+      return;
+    }
+
     const currentCount = inventoryCounts[action] ?? 0;
 
     if (currentCount < 1) {
       return;
     }
 
-    await onAction(action);
+    await onAction(action as ActionType);
   };
 
   const onRunMission = async (action: ActionType | null) => {
@@ -248,12 +256,16 @@ export default function HomeScreen() {
               }}
             >
               <Text style={[base.subtitle, { color: palette.text }]}>Inventory</Text>
+              {inventoryItems.length === 0 ? (
+                <Text style={[base.comments, { color: palette.icon }]}>No inventory items found.</Text>
+              ) : null}
               {inventoryItems.map((item) => {
-                const count = inventoryCounts[item.action] ?? 0;
-                const isUsing = actionLoading === item.action;
+                const count = inventoryCounts[item.itemKey] ?? item.quantity ?? 0;
+                const isUsable = (usableActions as string[]).includes(item.itemKey);
+                const isUsing = isUsable ? actionLoading === (item.itemKey as ActionType) : false;
                 return (
                   <View
-                    key={item.action}
+                    key={`${item.id ?? item.itemKey}-${item.itemKey}`}
                     style={{
                       borderWidth: 1,
                       borderColor: palette.tabIconDefault,
@@ -268,9 +280,8 @@ export default function HomeScreen() {
                   >
                     <View style={{ flex: 1, gap: 2 }}>
                       <Text style={[base.comments, { color: palette.text, fontStyle: 'normal', fontWeight: '700' }]}>
-                        {item.label} x{count}
+                        {item.itemKey} x{count}
                       </Text>
-                      <Text style={[base.comments, { color: palette.icon }]}>{item.description}</Text>
                     </View>
                     <Pressable
                       style={[
@@ -281,12 +292,14 @@ export default function HomeScreen() {
                           borderWidth: 1,
                           minWidth: 84,
                         },
-                        (count < 1 || isUsing) && buttons.disabled,
+                        (!isUsable || count < 1 || isUsing) && buttons.disabled,
                       ]}
-                      onPress={() => onUseInventoryItem(item.action)}
-                      disabled={count < 1 || actionLoading !== null}
+                      onPress={() => onUseInventoryItem(item.itemKey)}
+                      disabled={!isUsable || count < 1 || actionLoading !== null}
                     >
-                      <Text style={[buttons.text, { color: palette.text }]}>{isUsing ? '...' : item.buttonLabel}</Text>
+                      <Text style={[buttons.text, { color: palette.text }]}>
+                        {isUsing ? '...' : isUsable ? 'Use' : 'N/A'}
+                      </Text>
                     </Pressable>
                   </View>
                 );

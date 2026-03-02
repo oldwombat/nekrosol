@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import type { PlayerProfile } from './home-data';
+import { useHomeInventory } from './home-inventory';
 
 export type ActionType = 'SPD-1' | 'MED-1' | 'RAD-X' | 'BEG';
 
@@ -30,9 +31,12 @@ export function useHomeAuth() {
       me: `${API_BASE_URL}/api/players/me`,
       logout: `${API_BASE_URL}/api/players/logout`,
       actions: `${API_BASE_URL}/api/player-actions`,
+      inventory: `${API_BASE_URL}/api/player-inventory`,
     }),
     [],
   );
+  const { inventoryItems, inventoryCounts, loadInventory, resetInventory, mergeInventoryCounts } =
+    useHomeInventory(authUrl.inventory);
 
   const loadCurrentPlayer = useCallback(async () => {
     try {
@@ -48,11 +52,12 @@ export function useHomeAuth() {
 
       const data = await response.json();
       setPlayer(data?.user ?? null);
+      await loadInventory();
     } catch (error) {
       console.error('Error loading player session:', error);
       setPlayer(null);
     }
-  }, [authUrl.me]);
+  }, [authUrl.me, loadInventory]);
 
   const onSubmit = useCallback(async ({ email, password, onAuthenticated }: SubmitArgs) => {
     setLoading(true);
@@ -71,6 +76,7 @@ export function useHomeAuth() {
       if (loginResponse.ok) {
         const loginData = await loginResponse.json().catch(() => null);
         setPlayer(loginData?.user ?? null);
+        await loadInventory();
         onAuthenticated?.();
         return;
       }
@@ -107,6 +113,7 @@ export function useHomeAuth() {
 
       const loginData = await secondLoginResponse.json().catch(() => null);
       setPlayer(loginData?.user ?? null);
+      await loadInventory();
       onAuthenticated?.();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Authentication failed';
@@ -126,6 +133,7 @@ export function useHomeAuth() {
         credentials: 'include',
       });
       setPlayer(null);
+      resetInventory();
       onSignedOut?.();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to sign out';
@@ -157,6 +165,9 @@ export function useHomeAuth() {
       }
 
       setPlayer(data?.player ?? null);
+      mergeInventoryCounts(data?.inventoryCounts);
+
+      await loadInventory();
 
       if (action === 'BEG') {
         setActionMessage(`You begged and received ${data?.gain ?? 0} credits.`);
@@ -172,15 +183,18 @@ export function useHomeAuth() {
     } finally {
       setActionLoading(null);
     }
-  }, [authUrl.actions]);
+  }, [authUrl.actions, loadInventory, mergeInventoryCounts]);
 
   return {
     loading,
     actionLoading,
     player,
+    inventoryItems,
+    inventoryCounts,
     errorMessage,
     actionMessage,
     loadCurrentPlayer,
+    loadInventory,
     onSubmit,
     onSignOut,
     onAction,
