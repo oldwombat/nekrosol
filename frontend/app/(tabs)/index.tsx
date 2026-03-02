@@ -1,202 +1,34 @@
-import { Pressable, Text, TextInput, View } from 'react-native';
-import { useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
 
 import { base, buttons, Colors, form } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-
-type PlayerProfile = {
-  id?: string | number;
-  email?: string;
-  displayName?: string | null;
-  credits?: number | null;
-  creditsMax?: number | null;
-  energy?: number | null;
-  energyMax?: number | null;
-  health?: number | null;
-  healthMax?: number | null;
-  radiation?: number | null;
-  radiationMax?: number | null;
-  thug?: number | null;
-  thief?: number | null;
-  grifter?: number | null;
-  pilot?: number | null;
-  medic?: number | null;
-  hacker?: number | null;
-  technician?: number | null;
-  hazmat?: number | null;
-  physicist?: number | null;
-};
-
-type ActionType = 'SPD-1' | 'MED-1' | 'RAD-X' | 'BEG';
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
+import {
+  getStatItems,
+  inventoryItems,
+  locationItems,
+  missionItems,
+  type InventoryAction,
+  type PlayerProfile,
+  skillItems,
+} from './home-data';
+import { type ActionType, useHomeAuth } from './home-auth';
 
 export default function HomeScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [actionLoading, setActionLoading] = useState<ActionType | null>(null);
-  const [player, setPlayer] = useState<PlayerProfile | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [activeSkillTip, setActiveSkillTip] = useState<string | null>(null);
+  const [selectedMissionId, setSelectedMissionId] = useState<string>(missionItems[0]?.id ?? '');
+  const [selectedLocationId, setSelectedLocationId] = useState<string>(locationItems[0]?.id ?? '');
+  const { loading, actionLoading, player, errorMessage, actionMessage, loadCurrentPlayer, onSubmit, onAction } =
+    useHomeAuth();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const palette = Colors[isDark ? 'dark' : 'light'];
 
-  const authUrl = useMemo(
-    () => ({
-      login: `${API_BASE_URL}/api/players/login`,
-      signup: `${API_BASE_URL}/api/players`,
-      me: `${API_BASE_URL}/api/players/me`,
-      logout: `${API_BASE_URL}/api/players/logout`,
-      actions: `${API_BASE_URL}/api/player-actions`,
-    }),
-    [],
-  );
-
-  const loadCurrentPlayer = async () => {
-    try {
-      const response = await fetch(authUrl.me, {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        setPlayer(null);
-        return;
-      }
-      const data = await response.json();
-      setPlayer(data?.user ?? null);
-    } catch (error) {
-      console.error('Error loading player session:', error);
-      setPlayer(null);
-    }
-  };
-
-  const onSubmit = async () => {
-    setLoading(true);
-    setErrorMessage(null);
-
-    try {
-      const loginResponse = await fetch(authUrl.login, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (loginResponse.ok) {
-        const loginData = await loginResponse.json().catch(() => null);
-        setPlayer(loginData?.user ?? null);
-        setPassword('');
-        return;
-      }
-
-      if (loginResponse.status !== 401) {
-        throw new Error('Unable to authenticate with these credentials');
-      }
-
-      // Auto-create a player account if login fails and email does not exist yet.
-      // If the account already exists, this will fail and we surface a generic auth error.
-      {
-        const signupResponse = await fetch(authUrl.signup, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({ email, password }),
-        });
-
-        if (!signupResponse.ok) {
-          throw new Error('Unable to authenticate with these credentials');
-        }
-      }
-
-      const secondLoginResponse = await fetch(authUrl.login, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!secondLoginResponse.ok) {
-        throw new Error('Unable to authenticate with these credentials');
-      }
-
-      const loginData = await secondLoginResponse.json().catch(() => null);
-      setPlayer(loginData?.user ?? null);
-      setPassword('');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Authentication failed';
-      setErrorMessage(message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onSignOut = async () => {
-    setLoading(true);
-    setErrorMessage(null);
-
-    try {
-      await fetch(authUrl.logout, {
-        method: 'POST',
-        credentials: 'include',
-      });
-      setPlayer(null);
-      setPassword('');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to sign out';
-      setErrorMessage(message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onAction = async (action: ActionType) => {
-    setActionLoading(action);
-    setErrorMessage(null);
-    setActionMessage(null);
-
-    try {
-      const response = await fetch(authUrl.actions, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ action }),
-      });
-
-      const data = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(data?.error || 'Action failed');
-      }
-
-      setPlayer(data?.player ?? null);
-
-      if (action === 'BEG') {
-        setActionMessage(`You begged and received ${data?.gain ?? 0} credits.`);
-      } else {
-        setActionMessage(`${action} applied successfully.`);
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Action failed';
-      setErrorMessage(message);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
   useEffect(() => {
-    loadCurrentPlayer();
-  }, []);
+    void loadCurrentPlayer();
+  }, [loadCurrentPlayer]);
 
   const authInputStyle = [
     form.input,
@@ -207,37 +39,43 @@ export default function HomeScreen() {
     },
   ];
 
-  const statItems = player
-    ? [
-      { key: 'credits', label: 'Credits', value: player.credits ?? 0, max: player.creditsMax ?? 1000000 },
-      { key: 'energy', label: 'Energy', value: player.energy ?? 0, max: player.energyMax ?? 10 },
-      { key: 'health', label: 'Health', value: player.health ?? 0, max: player.healthMax ?? 100 },
-      { key: 'radiation', label: 'Radiation', value: player.radiation ?? 0, max: player.radiationMax ?? 100 },
-    ]
-    : [];
+  const statItems = getStatItems(player);
+  const selectedMission = missionItems.find((mission) => mission.id === selectedMissionId) ?? missionItems[0];
+  const selectedLocation = locationItems.find((location) => location.id === selectedLocationId) ?? locationItems[0];
+  const inventoryCounts = {
+    'SPD-1': Number(player?.itemSpd1 ?? 0),
+    'MED-1': Number(player?.itemMed1 ?? 0),
+    'RAD-X': Number(player?.itemRadx ?? 0),
+  };
 
-  const skillItems = [
-    { key: 'thug', label: 'Thug', tip: 'Physical, combat, defence' },
-    { key: 'thief', label: 'Thief', tip: 'Physical, agile, nimble' },
-    { key: 'grifter', label: 'Grifter', tip: 'Skill, crime, cunning' },
-    { key: 'pilot', label: 'Pilot', tip: 'Skill, courage, speed' },
-    { key: 'medic', label: 'Medic', tip: 'Skill, intelligence, healer' },
-    { key: 'hacker', label: 'Hacker', tip: 'Skill, intelligence, technical' },
-    { key: 'technician', label: 'Technician', tip: 'Skill, intelligence, mechanical, biotech' },
-    { key: 'hazmat', label: 'Hazmat', tip: 'Physical, resist radiation' },
-    {
-      key: 'physicist',
-      label: 'Physicist',
-      tip: 'Skill, control radiation effects and mutations caused by Nekrosol solar radiation',
-    },
-  ];
+  const onUseInventoryItem = async (action: InventoryAction) => {
+    const currentCount = inventoryCounts[action] ?? 0;
+
+    if (currentCount < 1) {
+      return;
+    }
+
+    await onAction(action);
+  };
+
+  const onRunMission = async (action: ActionType | null) => {
+    if (!action) {
+      return;
+    }
+
+    await onAction(action);
+  };
 
   return (
-    <View style={base.container}>
+    <View style={[base.container, { flex: 1, justifyContent: 'flex-start', width: '100%' }]}>
       <Text style={[base.title, { color: palette.text }]}>Home</Text>
 
       {player ? (
-        <View style={form.inputGroup}>
+        <ScrollView
+          style={{ width: '100%', flex: 1 }}
+          contentContainerStyle={{ gap: 12, paddingBottom: 24 }}
+          showsVerticalScrollIndicator
+        >
           <Text style={[base.paragraph, { color: palette.text }]}>Welcome back, {player.displayName ?? 'Player'}.</Text>
           <View style={{ width: '100%', gap: 12 }}>
             <View style={{ width: '100%', flexDirection: 'row', alignItems: 'stretch', gap: 12 }}>
@@ -283,31 +121,6 @@ export default function HomeScreen() {
                     </View>
                   );
                 })}
-
-                <Text style={[base.subtitle, { color: palette.text }]}>Actions</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  {(['SPD-1', 'MED-1', 'RAD-X', 'BEG'] as ActionType[]).map((action) => (
-                    <Pressable
-                      key={action}
-                      style={[
-                        buttons.secondary,
-                        {
-                          backgroundColor: palette.background,
-                          borderColor: palette.tabIconDefault,
-                          borderWidth: 1,
-                          minWidth: 90,
-                        },
-                        actionLoading === action && buttons.disabled,
-                      ]}
-                      onPress={() => onAction(action)}
-                      disabled={actionLoading !== null}
-                    >
-                      <Text style={[buttons.text, { color: palette.text }]}>
-                        {actionLoading === action ? '...' : action}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
               </View>
 
               <View
@@ -348,40 +161,78 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            <View style={{ width: '100%', flexDirection: 'row', alignItems: 'stretch', gap: 12 }}>
-              <View
-                style={{
-                  flex: 1,
-                  borderWidth: 1,
-                  borderColor: palette.tabIconDefault,
-                  borderRadius: 10,
-                  padding: 12,
-                  backgroundColor: palette.background,
-                  gap: 8,
-                }}
-              >
-                <Text style={[base.subtitle, { color: palette.text }]}>Missions</Text>
-                <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Patrol the Solar Fringe</Text>
-                <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Salvage Run: Rust Belt</Text>
-                <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Escort the Convoy</Text>
-              </View>
+            <View
+              style={{
+                width: '100%',
+                borderWidth: 1,
+                borderColor: palette.tabIconDefault,
+                borderRadius: 10,
+                padding: 12,
+                backgroundColor: palette.background,
+                gap: 10,
+              }}
+            >
+              <Text style={[base.subtitle, { color: palette.text }]}>Missions</Text>
+              <View style={{ width: '100%', flexDirection: 'row', alignItems: 'stretch', gap: 12 }}>
+                <View style={{ width: '42%', minWidth: 240, gap: 8 }}>
+                  {missionItems.map((mission) => {
+                    const active = mission.id === selectedMission?.id;
+                    return (
+                      <Pressable
+                        key={mission.id}
+                        onPress={() => setSelectedMissionId(mission.id)}
+                        style={{
+                          borderWidth: 1,
+                          borderColor: active ? palette.link : palette.tabIconDefault,
+                          borderRadius: 8,
+                          padding: 10,
+                          backgroundColor: palette.background,
+                          gap: 4,
+                        }}
+                      >
+                        <Text style={[base.comments, { color: palette.text, fontStyle: 'normal', fontWeight: '700' }]}>
+                          {mission.title}
+                        </Text>
+                        <Text style={[base.comments, { color: palette.icon }]}>{mission.summary}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
 
-              <View
-                style={{
-                  width: '42%',
-                  minWidth: 240,
-                  borderWidth: 1,
-                  borderColor: palette.tabIconDefault,
-                  borderRadius: 10,
-                  padding: 12,
-                  backgroundColor: palette.background,
-                  gap: 8,
-                }}
-              >
-                <Text style={[base.subtitle, { color: palette.text }]}>Inventory</Text>
-                <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Basic Rations x3</Text>
-                <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Scrap Toolkit x1</Text>
-                <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Solar Jacket x1</Text>
+                <View
+                  style={{
+                    flex: 1,
+                    borderWidth: 1,
+                    borderColor: palette.tabIconDefault,
+                    borderRadius: 8,
+                    padding: 12,
+                    backgroundColor: palette.background,
+                    gap: 8,
+                  }}
+                >
+                  <Text style={[base.subtitle, { color: palette.text }]}>{selectedMission?.title}</Text>
+                  <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>
+                    {selectedMission?.details}
+                  </Text>
+                  {selectedMission?.action ? (
+                    <Pressable
+                      style={[
+                        buttons.secondary,
+                        {
+                          backgroundColor: palette.background,
+                          borderColor: palette.tabIconDefault,
+                          borderWidth: 1,
+                          alignSelf: 'flex-start',
+                        },
+                        actionLoading === selectedMission.action && buttons.disabled,
+                      ]}
+                      onPress={() => onRunMission(selectedMission.action)}
+                      disabled={actionLoading !== null}
+                    >
+                      <Text style={[buttons.text, { color: palette.text }]}>Run Mission</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
               </View>
             </View>
 
@@ -396,16 +247,112 @@ export default function HomeScreen() {
                 gap: 8,
               }}
             >
+              <Text style={[base.subtitle, { color: palette.text }]}>Inventory</Text>
+              {inventoryItems.map((item) => {
+                const count = inventoryCounts[item.action] ?? 0;
+                const isUsing = actionLoading === item.action;
+                return (
+                  <View
+                    key={item.action}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: palette.tabIconDefault,
+                      borderRadius: 8,
+                      padding: 10,
+                      backgroundColor: palette.background,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 10,
+                    }}
+                  >
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text style={[base.comments, { color: palette.text, fontStyle: 'normal', fontWeight: '700' }]}>
+                        {item.label} x{count}
+                      </Text>
+                      <Text style={[base.comments, { color: palette.icon }]}>{item.description}</Text>
+                    </View>
+                    <Pressable
+                      style={[
+                        buttons.secondary,
+                        {
+                          backgroundColor: palette.background,
+                          borderColor: palette.tabIconDefault,
+                          borderWidth: 1,
+                          minWidth: 84,
+                        },
+                        (count < 1 || isUsing) && buttons.disabled,
+                      ]}
+                      onPress={() => onUseInventoryItem(item.action)}
+                      disabled={count < 1 || actionLoading !== null}
+                    >
+                      <Text style={[buttons.text, { color: palette.text }]}>{isUsing ? '...' : item.buttonLabel}</Text>
+                    </Pressable>
+                  </View>
+                );
+              })}
+            </View>
+
+            <View
+              style={{
+                width: '100%',
+                borderWidth: 1,
+                borderColor: palette.tabIconDefault,
+                borderRadius: 10,
+                padding: 12,
+                backgroundColor: palette.background,
+                gap: 8,
+              }}
+            >
               <Text style={[base.subtitle, { color: palette.text }]}>Nekrosol</Text>
-              <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Dustline Tavern</Text>
-              <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Ember Bank</Text>
-              <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Blackglass Market</Text>
-              <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>• Reactor District</Text>
+              <View style={{ width: '100%', flexDirection: 'row', alignItems: 'stretch', gap: 12 }}>
+                <View style={{ width: '42%', minWidth: 240, gap: 8 }}>
+                  {locationItems.map((location) => {
+                    const active = location.id === selectedLocation?.id;
+                    return (
+                      <Pressable
+                        key={location.id}
+                        onPress={() => setSelectedLocationId(location.id)}
+                        style={{
+                          borderWidth: 1,
+                          borderColor: active ? palette.link : palette.tabIconDefault,
+                          borderRadius: 8,
+                          padding: 10,
+                          backgroundColor: palette.background,
+                          gap: 4,
+                        }}
+                      >
+                        <Text style={[base.comments, { color: palette.text, fontStyle: 'normal', fontWeight: '700' }]}>
+                          {location.name}
+                        </Text>
+                        <Text style={[base.comments, { color: palette.icon }]}>{location.summary}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                <View
+                  style={{
+                    flex: 1,
+                    borderWidth: 1,
+                    borderColor: palette.tabIconDefault,
+                    borderRadius: 8,
+                    padding: 12,
+                    backgroundColor: palette.background,
+                    gap: 8,
+                  }}
+                >
+                  <Text style={[base.subtitle, { color: palette.text }]}>{selectedLocation?.name}</Text>
+                  <Text style={[base.comments, { color: palette.text, fontStyle: 'normal' }]}>
+                    {selectedLocation?.details}
+                  </Text>
+                </View>
+              </View>
             </View>
           </View>
 
           {actionMessage ? <Text style={[base.comments, { color: palette.icon }]}>{actionMessage}</Text> : null}
-        </View>
+        </ScrollView>
       ) : (
         <View style={form.inputGroup}>
           <Text style={[base.subtitle, { color: palette.text }]}>Email</Text>
@@ -439,7 +386,7 @@ export default function HomeScreen() {
               },
               loading && buttons.disabled,
             ]}
-            onPress={onSubmit}
+            onPress={() => onSubmit({ email, password, onAuthenticated: () => setPassword('') })}
             disabled={loading || !email || !password}
           >
             <Text style={[buttons.text, { color: Colors.light.background }]}>
