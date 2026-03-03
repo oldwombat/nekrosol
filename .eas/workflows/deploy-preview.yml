@@ -1,0 +1,15 @@
+name: Deploy Web - Preview
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main", "feature/**"]
+
+jobs:
+  deploy_web_preview:
+    name: Deploy Web (Preview)
+    environment: preview
+    type: deploy
+    params:
+      prod: false
